@@ -2,7 +2,6 @@ package main.java;
 
 import java.io.*;
 import java.net.*;
-import java.nio.Buffer;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +47,7 @@ public class SimpleHttpServer{
 
             String responseBody;
             String status = "";
+            String contentType = "text/plain"; // default
             switch (pathOnly) {
                 case "/":
                     responseBody = "Welcome to my simple HTTP server!";
@@ -62,13 +62,18 @@ public class SimpleHttpServer{
                     responseBody = "Your user agent is: "+ userAgent;
                     status = "HTTP/1.1 200 OK";
                     break;
+                case "/json":
+                    status = "HTTP/1.1 200 OK";
+                    responseBody = "{\"message\":\"Hello, JSON!\",\"time\":\"" + LocalDateTime.now() + "\"}";
+                    contentType = "application/json";
+                    break;
                 default:
                     responseBody = "404 Not Found";
                     status = "HTTP/1.1 404 Not Found";
             }
 
             String httpResponse = "Http/1.1 " + status + "\r\n" +
-                    "Content-Type: text/plain\r\n" +
+                    "Content-Type: " + contentType + "\r\n" +
                     "Content-Length:" + responseBody.length() + "\r\n" +
                     "\r\n" +
                     responseBody;
