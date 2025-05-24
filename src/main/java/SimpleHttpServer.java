@@ -11,32 +11,36 @@ public class SimpleHttpServer{
         ServerSocket serverSocket = new ServerSocket(port);
         System.out.println("Server listening on port "+ port);
 
-        while(true){
+        while(true) {
             Socket clientSocket = serverSocket.accept();
-            System.out.println("Accepted connection from "+ clientSocket.getInetAddress());
+            new Thread(() -> {
+                try {
+                    handleClient(clientSocket);
+                }catch (IOException e){
+                    e.printStackTrace();
+                }
+            }).start();
+        }
+    }
 
+    private static void handleClient(Socket clientSocket) throws IOException{
+        try (
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-
+        ){
             String requestLine = in.readLine();
-            System.out.println("Request: "+ requestLine);
+            System.out.println("Request: " + requestLine);
 
-            if(requestLine == null || requestLine.isEmpty()){
-                clientSocket.close();
-                continue;
-            }
+            if (requestLine == null || requestLine.isEmpty()) return;
 
             String[] parts = requestLine.split(" ");
-            if(parts.length < 2){
-                clientSocket.close();
-                continue;
-            }
+            if (parts.length < 2) return;
 
             String method = parts[0];
             String path = parts[1];
 
             String responseBody;
-            switch (path){
+            switch (path) {
                 case "/":
                     responseBody = "Welcome to my simple HTTP server!";
                     break;
@@ -59,7 +63,10 @@ public class SimpleHttpServer{
 
             out.write(httpResponse);
             out.flush();
-            clientSocket.close();
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }finally {
+                clientSocket.close();
         }
     }
 }
