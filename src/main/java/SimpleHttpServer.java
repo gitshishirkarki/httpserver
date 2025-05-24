@@ -46,30 +46,34 @@ public class SimpleHttpServer{
             Map<String, String> headers = parseHeaders(in);
 
             String responseBody;
-            String status = "";
+            String status = "HTTP/1.1 200 OK"; // default
             String contentType = "text/plain"; // default
-            switch (pathOnly) {
-                case "/":
-                    responseBody = "Welcome to my simple HTTP server!";
-                    break;
-                case "/hello":
-                    String name = queryParams.getOrDefault("name", "stranger");
-                    responseBody = "Hello "+name+"!";
-                    status = "HTTP/1.1 200 OK";
-                    break;
-                case "/agent":
-                    String userAgent = headers.getOrDefault("User-Agent", "unknown");
-                    responseBody = "Your user agent is: "+ userAgent;
-                    status = "HTTP/1.1 200 OK";
-                    break;
-                case "/json":
-                    status = "HTTP/1.1 200 OK";
-                    responseBody = "{\"message\":\"Hello, JSON!\",\"time\":\"" + LocalDateTime.now() + "\"}";
-                    contentType = "application/json";
-                    break;
-                default:
-                    responseBody = "404 Not Found";
-                    status = "HTTP/1.1 404 Not Found";
+
+            if(method.equals("POST") && pathOnly.equals("/echo")){
+                int contentLength = headers.get("Content-Length") !=null ? Integer.parseInt(headers.get("Content-Length")) : 0 ;
+                String requestBody = parseRequestBody(in, contentLength);
+                responseBody = "You posted: "+ requestBody;
+            }else{
+                switch (pathOnly) {
+                    case "/":
+                        responseBody = "Welcome to my simple HTTP server!";
+                        break;
+                    case "/hello":
+                        String name = queryParams.getOrDefault("name", "stranger");
+                        responseBody = "Hello " + name + "!";
+                        break;
+                    case "/agent":
+                        String userAgent = headers.getOrDefault("User-Agent", "unknown");
+                        responseBody = "Your user agent is: " + userAgent;
+                        break;
+                    case "/json":
+                        responseBody = "{\"message\":\"Hello, JSON!\",\"time\":\"" + LocalDateTime.now() + "\"}";
+                        contentType = "application/json";
+                        break;
+                    default:
+                        responseBody = "404 Not Found";
+                        status = "HTTP/1.1 404 Not Found";
+                }
             }
 
             String httpResponse = "Http/1.1 " + status + "\r\n" +
@@ -87,6 +91,12 @@ public class SimpleHttpServer{
         }
     }
 
+    private static String parseRequestBody(BufferedReader in, int contentLength) throws IOException{
+        char[] bodyChars = new char[contentLength];
+        in.read(bodyChars, 0, contentLength);
+        return new String(bodyChars);
+    }
+
     private static Map<String, String> parseHeaders(BufferedReader in) throws IOException{
             Map<String, String> headers = new HashMap<>();
             String line;
@@ -96,6 +106,7 @@ public class SimpleHttpServer{
                     String headerName = line.substring(0, idx).trim();
                     String headerValue = line.substring(idx + 1).trim();
                     headers.put(headerName, headerValue);
+
                 }
             }
             return headers;
